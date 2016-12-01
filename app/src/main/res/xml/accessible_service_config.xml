@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<accessibility-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/service_description"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeNotificationStateChanged|typeWindowsChanged"
+    android:accessibilityFeedbackType="feedbackAllMask"
+    android:packageNames="com.tencent.mm"
+    android:notificationTimeout="10"
+    android:settingsActivity="xyz.monkeytong.hongbao.activities.SettingsActivity"
+    android:accessibilityFlags="flagDefault"
+    android:canRetrieveWindowContent="true"/>
+<!--accessibilityEventTypes：表示该服务对界面中的哪些变化感兴趣，即哪些事件通知，比如窗口打开，滑动，焦点变化，长按等。具体的值可以在AccessibilityEvent类中查到，如typeAllMask表示接受所有的事件通知-->
+<!--accessibilityFeedbackType：表示反馈方式，比如是语音播放，还是震动-->
+<!--canRetrieveWindowContent：表示该服务能否访问活动窗口中的内容。也就是如果你希望在服务中获取窗体内容，则需要设置其值为true-->
+<!--description：对该无障碍功能的描述，会显示在系统设置#无障碍#你这个服务开关下边-->
+<!--notificationTimeout：接受事件的时间间隔-->
+<!--packageNames：表示对该服务是用来监听哪个包的产生的事件，这里是微信-->

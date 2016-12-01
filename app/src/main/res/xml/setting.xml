@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="设置" android:layout="@layout/category">
+        <!-- 开关 -->
+        <SwitchPreference
+            android:summary="手动开启方法：进入系统设置-辅助功能-无障碍-MoneyGo-打开开关即可"
+            android:key="watch_auto_btn"
+            android:title="开启自动监视"/>
+        <CheckBoxPreference
+            android:summary="监视通知栏中新消息中的红包并秒抢"
+            android:key="watch_auto_notification"
+            android:defaultValue="true"
+            android:title="监视通知栏"/>
+        <CheckBoxPreference
+            android:summary="监视列表页面新消息中的红包并秒抢"
+            android:key="watch_auto_list"
+            android:defaultValue="true"
+            android:title="监视聊天列表页"/>
+        <CheckBoxPreference
+            android:summary="开启后，即使在当前聊天界面出现的红包也会自动拆包秒抢，解放双手，畅快收红包"
+            android:key="watch_auto_btn_chatting"
+            android:defaultValue="true"
+            android:title="疯狂模式"/>
+        <CheckBoxPreference
+            android:summary="息屏后可默认继续监控30分钟，此功能会增加耗电，请小主决定"
+            android:key="watch_auto_btn_lock"
+            android:title="息屏嗨"
+            />
+
+    </PreferenceCategory>
+    <PreferenceCategory android:title="防封号模块" android:layout="@layout/category">
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="auto_open"
+            android:summary="关闭则需要自己手动拆红包"
+            android:title="自动拆红包"/>
+        <com.go.cqh.moneygo.widget.SeekBarPreference
+            android:key="watch_auto_display"
+            android:summary="点击设置延时时间"
+            pref_kind="watch_auto_display"
+            android:title="延时拆红包"/>
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="watch_auto_self"
+            android:summary="自己发的红包，照样抢! 抢! 抢!"
+            android:title="毫不留情"/>
+        <EditTextPreference
+            android:key="watch_auto_pass_words"
+            android:summary="通过一些关键字过滤不要抢的红包(空格间隔)，例：专属 @ 还 给 不准抢"
+            android:title="过滤红包"/>
+    </PreferenceCategory>
+</PreferenceScreen>
