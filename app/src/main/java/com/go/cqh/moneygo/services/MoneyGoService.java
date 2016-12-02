@@ -78,6 +78,37 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
     private SharedPreferences sharedPreferences;
 
     /**
+     * 当sharepreference值发生变化的监听
+     */
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals("watch_auto_btn_lock")) {
+            Boolean changedValue = sharedPreferences.getBoolean(key, false);
+            this.powerManagerUtil.handleWakeLock(changedValue);
+        }
+    }
+    /**
+     * 当启动服务的时候就会自动被调用
+     */
+    @Override
+    public void onServiceConnected() {
+        super.onServiceConnected();
+        this.watchFlagsFromPreference();
+    }
+
+    private void watchFlagsFromPreference() {
+        /*获得一个默认的sharepreferences*/
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        /*注册一个值改变的监听*/
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+        /*实例一个电源管理类*/
+        this.powerManagerUtil = new PowerManagerUtil(this);
+        //根据用户设置是否打开息屏抢红包的功能
+        boolean watchAutoBtnLock = sharedPreferences.getBoolean("watch_auto_btn_lock", false);
+        this.powerManagerUtil.handleWakeLock(watchAutoBtnLock);
+    }
+
+    /**
      * 监听窗口变化的回调
      *
      * @param event 事件
@@ -86,19 +117,26 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (sharedPreferences == null) return;
+
         //根据事件会调类型进行处理
         setCurrentActivityName(event);
+
+        Log.d("-------", "有动静");
+        Log.d("-------mMutex--", mMutex+"");
         /* 检测通知消息 */
         if (!mMutex) {
+            Log.d("-------", "查通知栏");
             if (sharedPreferences.getBoolean("watch_auto_notification", false) && watchNotifications(event))
                 return;
             if (sharedPreferences.getBoolean("watch_auto_list", false) && watchList(event)) return;
+            Log.d("-------", "查列表");
             mListMutex = false;
         }
 
         if (!mChatMutex) {
             mChatMutex = true;
             if (sharedPreferences.getBoolean("watch_auto_btn_chatting", false)) {
+                Log.d("-------", "查聊天页面");
                 watchChat(event);
             }
             mChatMutex = false;
@@ -108,24 +146,31 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
     private void watchChat(AccessibilityEvent event) {
         this.rootNodeInfo = getRootInActiveWindow();
-
+        Log.d("----rootNodeInfo---", rootNodeInfo+"");
         if (rootNodeInfo == null) return;
 
         mReceiveNode = null;
         mUnpackNode = null;
 
         checkNodeInfo(event.getEventType());
-
+        Log.d("----mReceived---", mLuckyMoneyReceived+"");
+        Log.d("----mPicked---", mLuckyMoneyPicked+"");
+        Log.d("----mReceiveNode---", mReceiveNode+"");
         /* 如果已经接收到红包并且还没有戳开 */
-        if (mLuckyMoneyReceived && !mLuckyMoneyPicked && (mReceiveNode != null)) {
+        if (mReceiveNode != null && mLuckyMoneyReceived && !mLuckyMoneyPicked) {
+            Log.d("-------", "111111");
             mMutex = true;
-            /*模拟点击*/
+
+            /*模拟点击 点开红包*/
             mReceiveNode.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
             mLuckyMoneyReceived = false;
             mLuckyMoneyPicked = true;
         }
+        Log.d("----mUnpackCount---", mUnpackCount+"");
+        Log.d("----mUnpackNode---", mUnpackNode+"");
         /* 如果戳开但还未领取 */
-        if (mUnpackCount == 1 && (mUnpackNode != null)) {
+        if (mUnpackNode != null && mUnpackCount == 1) {
+            Log.d("-------", "2222222");
             //获得拆包延迟时间，默认0秒不延迟
             int delayFlag = sharedPreferences.getInt("watch_auto_display", 0) * 1000;
             new android.os.Handler().postDelayed(
@@ -144,14 +189,14 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
                     delayFlag);
         }
     }
-
+    //根据当前窗口变化  记录下当前页面名字
     private void setCurrentActivityName(AccessibilityEvent event) {
         /*通知栏如果没有发生变化*/
         if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             return;
         }
-
         try {
+            Log.d("-------", "33333");
             ComponentName componentName = new ComponentName(
                     event.getPackageName().toString(),
                     event.getClassName().toString()
@@ -176,6 +221,7 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
         //增加条件判断currentActivityName.contains(WECHAT_LUCKMONEY_GENERAL_ACTIVITY)
         //避免当订阅号中出现标题为“[微信红包]拜年红包”（其实并非红包）的信息时误判
         if (!nodes.isEmpty() && currentActivityName.contains(WECHAT_LUCKMONEY_GENERAL_ACTIVITY)) {
+            Log.d("-------", "watchList");
             AccessibilityNodeInfo nodeToClick = nodes.get(0);
             if (nodeToClick == null) return false;
             CharSequence contentDescription = nodeToClick.getContentDescription();
@@ -192,11 +238,11 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
         // Not a notification
         if (event.getEventType() != AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED)
             return false;
-
         // Not a hongbao
         String tip = event.getText().toString();
         if (!tip.contains(WECHAT_NOTIFICATION_TIP)) return true;
 
+        Log.d("-------", "watchNotifications");
         Parcelable parcelable = event.getParcelableData();
         if (parcelable instanceof Notification) {
             Notification notification = (Notification) parcelable;
@@ -231,7 +277,7 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
             else
                 return null;
         }
-
+        Log.d("------findOpenButton-", "findOpenButton");
         //layout元素，遍历找button
         AccessibilityNodeInfo button;
         for (int i = 0; i < node.getChildCount(); i++) {
@@ -254,14 +300,12 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
         /* 聊天会话窗口，遍历节点匹配“领取红包”和"查看红包" */
         AccessibilityNodeInfo node1 = (sharedPreferences.getBoolean("watch_auto_self", false)) ?
                 this.getTheLastNode(WECHAT_VIEW_OTHERS_CH, WECHAT_VIEW_SELF_CH) : this.getTheLastNode(WECHAT_VIEW_OTHERS_CH);
-        if (node1 != null &&
-                (currentActivityName.contains(WECHAT_LUCKMONEY_CHATTING_ACTIVITY)
-                        || currentActivityName.contains(WECHAT_LUCKMONEY_GENERAL_ACTIVITY))) {
+        if (node1 != null && (currentActivityName.contains(WECHAT_LUCKMONEY_CHATTING_ACTIVITY) || currentActivityName.contains(WECHAT_LUCKMONEY_GENERAL_ACTIVITY))) {
             String excludeWords = sharedPreferences.getString("watch_auto_pass_words", "");
-            if (this.signature.generateSignature(node1, excludeWords)) {
+            Log.d("-----generateSignature", signature.generateSignature(node1, excludeWords) + "");
+            if (signature.generateSignature(node1, excludeWords)) {
                 mLuckyMoneyReceived = true;
                 mReceiveNode = node1;
-                Log.d("sig", this.signature.toString());
             }
             return;
         }
@@ -273,19 +317,15 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
             mUnpackCount += 1;
             return;
         }
-
+        Log.d("-------", "checkNodeInfo");
         /* 戳开红包，红包已被抢完，遍历节点匹配“红包详情”和“手慢了” */
-        boolean hasNodes = this.hasOneOfThoseNodes(
-                WECHAT_BETTER_LUCK_CH, WECHAT_DETAILS_CH,
-                WECHAT_BETTER_LUCK_EN, WECHAT_DETAILS_EN, WECHAT_EXPIRES_CH);
-        if (mMutex && eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && hasNodes
-                && (currentActivityName.contains(WECHAT_LUCKMONEY_DETAIL_ACTIVITY)
-                || currentActivityName.contains(WECHAT_LUCKMONEY_RECEIVE_ACTIVITY))) {
+        boolean hasNodes = hasOneOfThoseNodes(WECHAT_BETTER_LUCK_CH, WECHAT_DETAILS_CH, WECHAT_BETTER_LUCK_EN, WECHAT_DETAILS_EN, WECHAT_EXPIRES_CH);
+        if (mMutex && eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && hasNodes&& (currentActivityName.contains(WECHAT_LUCKMONEY_DETAIL_ACTIVITY) || currentActivityName.contains(WECHAT_LUCKMONEY_RECEIVE_ACTIVITY))) {
             mMutex = false;
             mLuckyMoneyPicked = false;
             mUnpackCount = 0;
             performGlobalAction(GLOBAL_ACTION_BACK);
-            //signature.commentString = generateCommentString();
+            signature.commentString = generateCommentString();
         }
     }
 
@@ -345,37 +385,7 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
         return lastNode;
     }
 
-    /**
-     * 当启动服务的时候就会自动被调用
-     */
-    @Override
-    public void onServiceConnected() {
-        super.onServiceConnected();
-        this.watchFlagsFromPreference();
-    }
 
-    private void watchFlagsFromPreference() {
-        /*获得一个默认的sharepreferences*/
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        /*注册一个值改变的监听*/
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-        /*实例一个电源管理类*/
-        this.powerManagerUtil = new PowerManagerUtil(this);
-        //根据用户设置是否打开息屏抢红包的功能
-        boolean watchAutoBtnLock = sharedPreferences.getBoolean("watch_auto_btn_lock", false);
-        this.powerManagerUtil.handleWakeLock(watchAutoBtnLock);
-    }
-
-    /**
-     * 当sharepreference值发生变化的监听
-     */
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals("watch_auto_btn_lock")) {
-            Boolean changedValue = sharedPreferences.getBoolean(key, false);
-            this.powerManagerUtil.handleWakeLock(changedValue);
-        }
-    }
 
     @Override
     public void onDestroy() {
@@ -384,20 +394,20 @@ public class MoneyGoService extends AccessibilityService implements SharedPrefer
         super.onDestroy();
     }
 
-    //private String generateCommentString() {
-    //    if (!signature.others) return null;
-    //
-    //    Boolean needComment = sharedPreferences.getBoolean("pref_comment_switch", false);
-    //    if (!needComment) return null;
-    //
-    //    String[] wordsArray = sharedPreferences.getString("pref_comment_words", "").split(" +");
-    //    if (wordsArray.length == 0) return null;
-    //
-    //    Boolean atSender = sharedPreferences.getBoolean("pref_comment_at", false);
-    //    if (atSender) {
-    //        return "@" + signature.sender + " " + wordsArray[(int) (Math.random() * wordsArray.length)];
-    //    } else {
-    //        return wordsArray[(int) (Math.random() * wordsArray.length)];
-    //    }
-    //}
+    private String generateCommentString() {
+        if (!signature.others) return null;
+
+        Boolean needComment = sharedPreferences.getBoolean("pref_comment_switch", false);
+        if (!needComment) return null;
+
+        String[] wordsArray = sharedPreferences.getString("pref_comment_words", "").split(" +");
+        if (wordsArray.length == 0) return null;
+
+        Boolean atSender = sharedPreferences.getBoolean("pref_comment_at", false);
+        if (atSender) {
+            return "@" + signature.sender + " " + wordsArray[(int) (Math.random() * wordsArray.length)];
+        } else {
+            return wordsArray[(int) (Math.random() * wordsArray.length)];
+        }
+    }
 }

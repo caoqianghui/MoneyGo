@@ -4,11 +4,13 @@ package com.go.cqh.moneygo.fragments;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.SwitchPreference;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.Toast;
 
@@ -33,10 +35,20 @@ public class SettingFragment extends PreferenceFragment implements Accessibility
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.setting);
-        initPreferencesClick();
         //监听AccessibilityService 变化
         accessibilityManager = (AccessibilityManager) getActivity().getSystemService(Context.ACCESSIBILITY_SERVICE);
         accessibilityManager.addAccessibilityStateChangeListener(this);
+        initPreferencesClick();
+        initVersion();
+    }
+
+    private void initVersion() {
+        Preference version = findPreference("version");
+        try {
+            version.setSummary("v" + getActivity().getPackageManager().getPackageInfo(getActivity().getPackageName(), 0).versionName);
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -53,6 +65,7 @@ public class SettingFragment extends PreferenceFragment implements Accessibility
             ((SwitchPreference) watch_auto_btn).setChecked(true);
         } else {
             ((SwitchPreference) watch_auto_btn).setChecked(false);
+
         }
     }
 
@@ -70,6 +83,11 @@ public class SettingFragment extends PreferenceFragment implements Accessibility
                     /*启动监控服务*/
                     Intent accessibleIntent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
                     startActivity(accessibleIntent);
+                } else {
+                    Toast.makeText(getActivity(), "点击「无障碍」关闭「MoneyGo服务」，关闭之后无法再自动收红包了哦", Toast.LENGTH_LONG).show();
+                    /*关闭监控服务*/
+                    Intent accessibleIntent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                    startActivity(accessibleIntent);
                 }
                 return true;
             }
@@ -83,13 +101,12 @@ public class SettingFragment extends PreferenceFragment implements Accessibility
     private boolean isServiceEnabled() {
         List<AccessibilityServiceInfo> accessibilityServices = accessibilityManager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC);
         for (AccessibilityServiceInfo info : accessibilityServices) {
-            if (info.getId().equals(getActivity().getPackageName() + "/.services.MoneyGoService")) {
+            if (info.getId().equals("com.go.cqh.moneygo" + "/.services.MoneyGoService")) {
                 return true;
             }
         }
         return false;
     }
-
     @Override
     public void onAccessibilityStateChanged(boolean enabled) {
         updateState();

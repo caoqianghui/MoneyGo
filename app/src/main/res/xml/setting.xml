@@ -5,14 +5,14 @@
         <SwitchPreference
             android:summary="手动开启方法：进入系统设置-辅助功能-无障碍-MoneyGo-打开开关即可"
             android:key="watch_auto_btn"
-            android:title="开启自动监视"/>
+            android:title="启动"/>
         <CheckBoxPreference
-            android:summary="监视通知栏中新消息中的红包并秒抢"
+            android:summary="监视通知栏新消息中的红包提示并秒抢"
             android:key="watch_auto_notification"
             android:defaultValue="true"
             android:title="监视通知栏"/>
         <CheckBoxPreference
-            android:summary="监视列表页面新消息中的红包并秒抢"
+            android:summary="监视列表页面新消息中的红包提示并秒抢"
             android:key="watch_auto_list"
             android:defaultValue="true"
             android:title="监视聊天列表页"/>
@@ -42,11 +42,21 @@
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="watch_auto_self"
-            android:summary="自己发的红包，照样抢! 抢! 抢!"
-            android:title="毫不留情"/>
+            android:summary="自己发的红包，毫不留情照样抢! 抢! 抢!"
+            android:title="抢自己发的"/>
         <EditTextPreference
             android:key="watch_auto_pass_words"
             android:summary="通过一些关键字过滤不要抢的红包(空格间隔)，例：专属 @ 还 给 不准抢"
             android:title="过滤红包"/>
+    </PreferenceCategory>
+    <PreferenceCategory android:title="关于" android:layout="@layout/category">
+        <Preference
+            android:title="版本更新"
+            android:summary=""
+            android:key="version"/>
+        <Preference
+            android:title="联系作者"
+            android:summary="caoqianghui@live.cn"
+            android:key="author"/>
     </PreferenceCategory>
 </PreferenceScreen>
